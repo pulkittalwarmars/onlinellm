@@ -19,10 +19,10 @@ def get_requirements(file_path:str)->List[str]:
     return requirements
 
 setup( ##meta data information of the package
-    name="mlproject",
+    name="onlinellm",
     version="0.0.0.1",
     author="pulkit",
-    author_email="pulkit@gmail.com",
+    author_email="pulkitt92@gmail.com",
     packages=find_packages(),
     install_requires=get_requirements('requirements.txt')
 )
