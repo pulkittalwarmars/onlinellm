@@ -26,19 +26,16 @@ def generate_chat_completion(messages):
 
     search_results = web_search(user_message)
     
-    # Filter out advertisements and extract relevant information
-    relevant_results = [result for result in search_results if not result['title'].endswith('Ad')]
-    
-    if relevant_results:
-        relevant_info = relevant_results[0]['snippet']
-    else:
-        relevant_info = "No relevant information found."
+    relevant_info = "\n".join([f"- {result['title']}: {result['snippet']}" for result in search_results])
 
     system_message = (
-        "You are a helpful assistant with access to information about Central Park in New York. "
-        "Use the provided search results to answer the user's query about main attractions in Central Park. "
-        "If the information is not directly related to the main attractions, provide a general response about Central Park "
-        "and suggest that the user check official websites or guides for more specific information."
+        "You are an advanced AI assistant with access to real-time web search capabilities. "
+        "Your role is to provide accurate, up-to-date, and comprehensive answers to user queries "
+        "based on the search results provided and your extensive knowledge base. "
+        "Always prioritize information from the search results, but feel free to supplement "
+        "with your general knowledge when appropriate. Provide well-structured, informative responses "
+        "that directly address the user's question. If the search results don't provide enough information "
+        "or seem irrelevant, state this clearly and offer the best answer you can based on your knowledge."
     )
 
     try:
@@ -46,13 +43,15 @@ def generate_chat_completion(messages):
             model=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": f"Query: {user_message}\nRelevant information: {relevant_info}"}
-            ]
+                {"role": "user", "content": f"Query: {user_message}\nRelevant information:\n{relevant_info}"}
+            ],
+            temperature=0.7,
+            max_tokens=800
         )
         gpt4_response = completion.choices[0].message.content
     except Exception as e:
         raise Exception(f"Error in GPT-4 API call: {str(e)}")
-
+    
     return {
         "id": f"chatcmpl-{uuid.uuid4().hex}",
         "object": "chat.completion",

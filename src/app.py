@@ -15,24 +15,19 @@ from src.config import Config
 
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 limiter = Limiter(key_func=get_remote_address, app=app)
 
 @app.route('/chat/completions', methods=['POST'])
 @limiter.limit("10 per minute")
 def chat_completions():
     data = request.json
-    model = data.get('model')
     messages = data.get('messages', [])
-
-    if model != Config.ONLINE_MODEL_ID:
-        return jsonify({"error": "Invalid model ID"}), 400
 
     try:
         response = generate_chat_completion(messages)
         return jsonify(response)
     except Exception as e:
-        app.logger.error(f"Error in chat_completions: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/', methods=['GET'])
@@ -43,20 +38,21 @@ def home():
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Chat with AI</title>
+            <title>AI Research Assistant</title>
             <style>
                 body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
                 #chat-form { display: flex; margin-bottom: 20px; }
                 #user-input { flex-grow: 1; padding: 10px; font-size: 16px; }
                 button { padding: 10px 20px; font-size: 16px; }
-                #response { border: 1px solid #ddd; padding: 20px; min-height: 100px; }
+                #response { border: 1px solid #ddd; padding: 20px; min-height: 100px; white-space: pre-wrap; }
             </style>
         </head>
         <body>
-            <h1>Chat with AI</h1>
+            <h1>AI Research Assistant</h1>
+            <p>Ask any question and get up-to-date information from the web and AI analysis.</p>
             <form id="chat-form">
-                <input type="text" id="user-input" placeholder="Enter your message">
-                <button type="submit">Send</button>
+                <input type="text" id="user-input" placeholder="Enter your question">
+                <button type="submit">Search and Analyze</button>
             </form>
             <div id="response"></div>
             <script>
@@ -64,13 +60,12 @@ def home():
                     e.preventDefault();
                     const userInput = document.getElementById('user-input');
                     const responseDiv = document.getElementById('response');
-                    responseDiv.innerText = 'Thinking...';
+                    responseDiv.innerText = 'Searching and analyzing...';
                     
                     fetch('/chat/completions', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
-                            model: 'pt_rekoncile_online',
                             messages: [
                                 {role: 'user', content: userInput.value}
                             ]
@@ -94,8 +89,6 @@ def home():
         </body>
         </html>
     ''')
-
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
