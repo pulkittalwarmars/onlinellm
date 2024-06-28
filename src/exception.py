@@ -1,4 +1,5 @@
 import sys
+import logging
 
 def error_message_details(error,error_detail:sys):
     _,_,exc_tb=error_detail.exc_info() # this variable tells you where the exception has occured i.e. what file and what line
@@ -22,3 +23,13 @@ class CustomException(Exception):
 
     def __str__(self) -> str:
         return self.error_message
+
+
+## Test the custom exception
+if __name__=="__main__":
+
+    try:
+        a=1/0
+    except Exception as e:
+        logging.info("CustomException divide by 0 error")
+        raise CustomException(e,sys)
