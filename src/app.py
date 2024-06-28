@@ -3,9 +3,7 @@
 ## Will delete this for the final version
 
 import os
-import sys
 
-from src.exception import CustomException
 from flask_cors import CORS
 from flask import Flask, request, jsonify, render_template_string
 from flask_limiter import Limiter
