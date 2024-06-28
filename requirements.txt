@@ -33,4 +33,6 @@ crewai_tools
 flask_limiter
 uuid
 requests
+google-api-python-client
+Flask-CORS
 # -e .
