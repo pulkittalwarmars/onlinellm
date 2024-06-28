@@ -1,11 +1,8 @@
 ## README for an ONLINE LLM
+Welcome to the Online LLM project starter Pack. This tool uses the poor man's search engine to give you a summary of the question you want know about. 
 
-TODO create setup.py
-TODO create requirements.txt // hyphen .e not going to be needed as I am not building it yet
-TODO create env variables
+1.  **Base Search Engine**  
+    - DUCKDUCKGO
 
-TODO create logger and custom except so I can see where things are going wrong
-
-TODO test logger and exception are working well
-
-TODO we can now start building the framework of the app by first testing the end
+2.  **Base Model**
+    - GPT-4-32k

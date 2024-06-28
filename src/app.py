@@ -92,17 +92,3 @@ def home():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-
-# try:
-#   completion = client.chat.completions.create(
-#       model="pt_rekoncile", ## TODO Update this with the final version once created
-#       messages=[
-#         {"role": "system", "content": "You are a helpful assistant."},
-#         {"role": "user", "content": "What is the top news about Gen AI today? "}
-#       ]
-#   )
-
-#   print(completion.choices[0].message)
-# except Exception as e:
-#   raise CustomException(e,sys)

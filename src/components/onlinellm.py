@@ -1,17 +1,12 @@
 # TODO use flask 
 
 import os
-import sys
 import uuid
 import time
-# from dotenv import load_dotenv
 from openai import AzureOpenAI
-from src.exception import CustomException
 from src.utils import web_search
 from src.config import Config
 
-
-# load_dotenv() 
 
 # Set up client API
 client = AzureOpenAI(azure_endpoint=os.getenv("AZURE_ENDPOINT"),
