@@ -1,0 +1,36 @@
+langchain_openai 
+langchain_core
+python-dotenv
+streamlit
+langchain_community
+langserve
+fastapi
+uvicorn
+sse_starlette
+bs4
+pypdf
+chromadb
+faiss-cpu
+groq
+cassio
+beautifulsoup4
+langchain-groq
+wikipedia
+arxiv
+langchainhub
+sentence_transformers
+PyPDF2
+langchain-objectbox
+langchain
+datasets
+dill
+flask
+openai
+crewai
+langchain_google_genai ##google gemini models for testing
+load_dotenv
+crewai_tools
+flask_limiter
+uuid
+requests
+-e .
