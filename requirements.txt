@@ -33,4 +33,4 @@ crewai_tools
 flask_limiter
 uuid
 requests
--e .
+# -e .
