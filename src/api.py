@@ -3,10 +3,19 @@ import os
 from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
-from openai import AzureOpenAI
+from langchain_openai import AzureOpenAI
 
 app = Flask(__name__)
 
+
+## Langmith tracking
+os.environ["LANGCHAIN_TRACING_V2"]="true"
+os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
+os.environ["LANGCHAIN_PROJECT"]=os.getenv("LANGCHAIN_PROJECT")
+os.environ["LANGCHAIN_ENDPOINT"]=os.getenv("LANGCHAIN_ENDPOINT")
+
+
+## Init g-variables
 AZURE_OPENAI_ENDPOINT = os.environ['AZURE_OPENAI_ENDPOINT']
 AZURE_OPENAI_API_KEY = os.environ['AZURE_OPENAI_API_KEY']
 AZURE_OPENAI_API_VERSION = os.environ['AZURE_OPENAI_API_VERSION']
