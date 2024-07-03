@@ -1,13 +1,14 @@
 langchain_openai 
 bs4
-beautifulsoup4
 langchain
-flask
-openai
 load_dotenv
 flask_limiter
 uuid
-requests
 Flask-CORS
-gunicorn
--e .
+flask==3.0.3
+werkzeug==3.0.1
+requests==2.31.0
+beautifulsoup4==4.12.3
+openai==1.13.3
+python-dotenv==1.0.1
+gunicorn==22.0.0

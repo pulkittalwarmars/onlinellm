@@ -5,9 +5,6 @@ import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 
-app = Flask(__name__)
-
-
 ## Langmith tracking
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
