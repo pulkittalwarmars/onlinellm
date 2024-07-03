@@ -17,6 +17,16 @@ os.environ["LANGCHAIN_ENDPOINT"]=os.getenv("LANGCHAIN_ENDPOINT")
 
 app = Flask(__name__)
 
+## global error handler
+@app.errorhandler(Exception)
+def handle_exception(e):
+    return jsonify(error=str(e)), 500
+
+##  Endpoint test
+@app.route('/test', methods=['GET'])
+def test():
+    return jsonify({"message": "API is working"}), 200
+
 AZURE_OPENAI_ENDPOINT = os.environ['AZURE_OPENAI_ENDPOINT']
 AZURE_OPENAI_API_KEY = os.environ['AZURE_OPENAI_API_KEY']
 AZURE_OPENAI_API_VERSION = os.environ['AZURE_OPENAI_API_VERSION']
