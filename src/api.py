@@ -1,4 +1,3 @@
-## Here we will bring it all together and host it in a REST API
 import os
 from flask import Flask, request, jsonify
 import requests
@@ -18,7 +17,6 @@ app.config['LANGCHAIN_TRACING_V2'] = "true"
 app.config['LANGCHAIN_API_KEY'] = os.getenv("LANGCHAIN_API_KEY")
 app.config['LANGCHAIN_PROJECT'] = os.getenv("LANGCHAIN_PROJECT")
 app.config['LANGCHAIN_ENDPOINT'] = os.getenv("LANGCHAIN_ENDPOINT")
-
 
 # Error handler
 @app.errorhandler(Exception)
@@ -76,11 +74,12 @@ def web_search(query, num_results=5):
         logger.error(f"Error in web search: {str(e)}")
         return []
 
-@app.route('/chat/completions', methods=['POST'])
+@app.route('/v1/chat/completions', methods=['POST'])
 def chat_completions():
     try:
         data = request.json
         messages = data.get('messages', [])
+        model = data.get('model', AZURE_OPENAI_DEPLOYMENT_NAME)
         
         user_message = next((msg['content'] for msg in messages if msg['role'] == 'user'), None)
         if not user_message:
@@ -100,16 +99,36 @@ def chat_completions():
             "or seem irrelevant, state this clearly and offer the best answer you can based on your knowledge."
         )
 
-        messages = [
+        augmented_messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": f"Query: {user_message}\nRelevant information:\n{relevant_info}"}
         ]
 
         completion = client.chat.completions.create(
-            model=AZURE_OPENAI_DEPLOYMENT_NAME,
-            messages=messages
+            model=model,
+            messages=augmented_messages
         )
-        return jsonify(completion.model_dump())
+        
+        # Format the response to match OpenAI API
+        response = {
+            "id": completion.id,
+            "object": "chat.completion",
+            "created": completion.created,
+            "model": model,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": completion.choices[0].message.content
+                    },
+                    "finish_reason": completion.choices[0].finish_reason
+                }
+            ],
+            "usage": completion.usage.model_dump() if completion.usage else None
+        }
+        
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Error in chat_completions: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
