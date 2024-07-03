@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 import logging
+from flask_cors import CORS
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)
 
 # Configuration and environment variables
 app.config['LANGCHAIN_TRACING_V2'] = "true"
@@ -76,6 +78,7 @@ def web_search(query, num_results=5):
 
 @app.route('/v1/chat/completions', methods=['POST'])
 def chat_completions():
+    logger.debug(f"Received request: {request.json}")
     try:
         data = request.json
         messages = data.get('messages', [])
