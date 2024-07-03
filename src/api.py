@@ -3,7 +3,7 @@ import os
 from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
-from langchain_openai import AzureOpenAI
+from openai import AzureOpenAI
 
 app = Flask(__name__)
 
@@ -15,20 +15,18 @@ os.environ["LANGCHAIN_PROJECT"]=os.getenv("LANGCHAIN_PROJECT")
 os.environ["LANGCHAIN_ENDPOINT"]=os.getenv("LANGCHAIN_ENDPOINT")
 
 
-## Init g-variables
+app = Flask(__name__)
+
 AZURE_OPENAI_ENDPOINT = os.environ['AZURE_OPENAI_ENDPOINT']
 AZURE_OPENAI_API_KEY = os.environ['AZURE_OPENAI_API_KEY']
 AZURE_OPENAI_API_VERSION = os.environ['AZURE_OPENAI_API_VERSION']
-ONLINE_MODEL_ID = os.environ['ONLINE_MODEL_ID']
+AZURE_OPENAI_DEPLOYMENT_NAME = os.environ['AZURE_OPENAI_DEPLOYMENT_NAME']
 
 client = AzureOpenAI(
     azure_endpoint=AZURE_OPENAI_ENDPOINT,
     api_version=AZURE_OPENAI_API_VERSION,
     api_key=AZURE_OPENAI_API_KEY
 )
-
-## Load in the function for websearching
-## TODO Test quality of responses upon changing num_results
 
 def web_search(query, num_results=5):
     url = "https://html.duckduckgo.com/html/"
@@ -55,7 +53,6 @@ def web_search(query, num_results=5):
     except Exception as e:
         print(f"Error in web search: {e}")
         return []
-    
 
 @app.route('/chat/completions', methods=['POST'])
 def chat_completions():
@@ -86,7 +83,7 @@ def chat_completions():
 
     try:
         completion = client.chat.completions.create(
-            model=ONLINE_MODEL_ID,
+            model=AZURE_OPENAI_DEPLOYMENT_NAME,
             messages=messages
         )
         return jsonify(completion.model_dump())
