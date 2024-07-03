@@ -1,5 +1,5 @@
 import sys
-from src.logger import logging
+from src.archive.pipeline.logger import logging
 
 def error_message_details(error,error_detail:sys):
     _,_,exc_tb=error_detail.exc_info() # this variable tells you where the exception has occured i.e. what file and what line

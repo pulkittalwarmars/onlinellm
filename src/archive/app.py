@@ -9,7 +9,7 @@ from flask import Flask, request, jsonify, render_template_string
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from src.components.onlinellm import generate_chat_completion
-from src.config import Config
+from src.archive.config import Config
 
 
 app = Flask(__name__)

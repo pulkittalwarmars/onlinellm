@@ -4,8 +4,8 @@ import os
 import uuid
 import time
 from openai import AzureOpenAI
-from src.utils import web_search
-from src.config import Config
+from src.archive.utils import web_search
+from src.archive.config import Config
 
 
 # Set up client API
