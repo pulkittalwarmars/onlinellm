@@ -22,8 +22,7 @@ setup( ##meta data information of the package
     name="onlinellm",
     version="0.0.0.1",
     author="pulkit",
-    author_email="pulkitt92@gmail.com",
     packages=find_packages(),
+    include_package_data=True,
     install_requires=get_requirements('requirements.txt')
 )
-

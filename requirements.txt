@@ -27,7 +27,7 @@ dill
 flask
 openai
 crewai
-langchain_google_genai ##google gemini models for testing
+langchain_google_genai 
 load_dotenv
 crewai_tools
 flask_limiter
@@ -35,4 +35,5 @@ uuid
 requests
 google-api-python-client
 Flask-CORS
-# -e .
+gunicorn
+-e .

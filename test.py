@@ -7,7 +7,7 @@ client = AzureOpenAI(
 )
 
 completion = client.chat.completions.create(
-    model="dummy_model",
+    model="pt_rekoncile_online",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is the top news about Gen AI today?"}
