@@ -31,10 +31,11 @@ def handle_exception(e):
 def test():
     return jsonify({"message": "API is working"}), 200
 
+# Azure OpenAI settings
 AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION')
-AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv('AZURE_OPENAI_DEPLOYMENT_NAME')
+AZURE_OPENAI_DEPLOYMENT_NAME = "pt_rekoncile" 
 
 if not all([AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME]):
     logger.error("Missing required Azure OpenAI environment variables")
@@ -76,13 +77,13 @@ def web_search(query, num_results=5):
         logger.error(f"Error in web search: {str(e)}")
         return []
 
-@app.route('/v1/chat/completions', methods=['POST'])
+@app.route('/openai/deployments/pt_rekoncile/chat/completions', methods=['POST'])
 def chat_completions():
-    logger.debug(f"Received request: {request.json}")
+    app.logger.info(f"Received request for model: {AZURE_OPENAI_DEPLOYMENT_NAME}")
+    app.logger.debug(f"Request data: {request.json}")
     try:
         data = request.json
         messages = data.get('messages', [])
-        model = data.get('model', AZURE_OPENAI_DEPLOYMENT_NAME)
         
         user_message = next((msg['content'] for msg in messages if msg['role'] == 'user'), None)
         if not user_message:
@@ -108,7 +109,7 @@ def chat_completions():
         ]
 
         completion = client.chat.completions.create(
-            model=model,
+            model=AZURE_OPENAI_DEPLOYMENT_NAME,
             messages=augmented_messages
         )
         
@@ -117,7 +118,7 @@ def chat_completions():
             "id": completion.id,
             "object": "chat.completion",
             "created": completion.created,
-            "model": model,
+            "model": AZURE_OPENAI_DEPLOYMENT_NAME,
             "choices": [
                 {
                     "index": 0,
@@ -133,8 +134,9 @@ def chat_completions():
         
         return jsonify(response)
     except Exception as e:
-        logger.error(f"Error in chat_completions: {str(e)}", exc_info=True)
+        app.logger.error(f"Error in chat_completions: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
+

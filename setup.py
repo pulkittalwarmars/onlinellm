@@ -6,13 +6,13 @@ setup(
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     install_requires=[
-        'Flask==3.0.3',
-        'Werkzeug==3.0.1',
-        'gunicorn==22.0.0',
-        'requests==2.31.0',
-        'beautifulsoup4==4.12.3',
-        'openai==1.13.3',
-        'python-dotenv==1.0.1',
+        'flask',
+        'Werkzeug',
+        'gunicorn',
+        'requests',
+        'beautifulsoup4',
+        'openai',
+        'python-dotenv',
     ],
     entry_points={
         'console_scripts': [
