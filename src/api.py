@@ -14,28 +14,11 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# Configuration and environment variables
-app.config['LANGCHAIN_TRACING_V2'] = "true"
-app.config['LANGCHAIN_API_KEY'] = os.getenv("LANGCHAIN_API_KEY")
-app.config['LANGCHAIN_PROJECT'] = os.getenv("LANGCHAIN_PROJECT")
-app.config['LANGCHAIN_ENDPOINT'] = os.getenv("LANGCHAIN_ENDPOINT")
-
-# Error handler
-@app.errorhandler(Exception)
-def handle_exception(e):
-    logger.error(f"An error occurred: {str(e)}", exc_info=True)
-    return jsonify(error=str(e)), 500
-
-# Endpoint test
-@app.route('/test', methods=['GET'])
-def test():
-    return jsonify({"message": "API is working"}), 200
-
 # Azure OpenAI settings
 AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION')
-AZURE_OPENAI_DEPLOYMENT_NAME = "pt_rekoncile" 
+AZURE_OPENAI_DEPLOYMENT_NAME = "pt_rekoncile"
 
 if not all([AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME]):
     logger.error("Missing required Azure OpenAI environment variables")
@@ -77,7 +60,7 @@ def web_search(query, num_results=5):
         logger.error(f"Error in web search: {str(e)}")
         return []
 
-@app.route('/openai/deployments/pt_rekoncile/chat/completions', methods=['POST'])
+@app.route('/openai/deployments/<model_name>/chat/completions', methods=['POST'])
 def chat_completions(model_name):
     app.logger.info(f"Received request for model: {model_name}")
     app.logger.debug(f"Request data: {request.json}")
@@ -137,6 +120,10 @@ def chat_completions(model_name):
     except Exception as e:
         app.logger.error(f"Error in chat_completions: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+@app.route('/test', methods=['GET'])
+def test():
+    return jsonify({"message": "API is working"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
