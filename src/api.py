@@ -73,9 +73,11 @@ def chat_completions(model_name):
             logger.warning("No user message found in the request")
             return jsonify({"error": "No user message found"}), 400
 
+        app.logger.info(f"Performing web search for query: {user_message}")
         search_results = web_search(user_message)
-        relevant_info = "\n".join(search_results)
         app.logger.info(f"Web search results: {search_results}")
+
+        relevant_info = "\n".join(search_results)
 
         system_message = (
             "You are an advanced AI assistant with access to real-time web search capabilities. "
@@ -89,8 +91,9 @@ def chat_completions(model_name):
 
         augmented_messages = [
             {"role": "system", "content": system_message},
-            {"role": "user", "content": f"Query: {user_message}\nRelevant information:\n{relevant_info}"}
+            {"role": "user", "content": f"Query: {user_message}\nRelevant information from web search:\n{relevant_info}\n\nPlease answer the query based on this up-to-date information."}
         ]
+
 
         completion = client.chat.completions.create(
             model=model_name,
