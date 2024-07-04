@@ -78,8 +78,8 @@ def web_search(query, num_results=5):
         return []
 
 @app.route('/openai/deployments/pt_rekoncile/chat/completions', methods=['POST'])
-def chat_completions():
-    app.logger.info(f"Received request for model: {AZURE_OPENAI_DEPLOYMENT_NAME}")
+def chat_completions(model_name):
+    app.logger.info(f"Received request for model: {model_name}")
     app.logger.debug(f"Request data: {request.json}")
     try:
         data = request.json
@@ -92,6 +92,7 @@ def chat_completions():
 
         search_results = web_search(user_message)
         relevant_info = "\n".join(search_results)
+        app.logger.info(f"Web search results: {search_results}")
 
         system_message = (
             "You are an advanced AI assistant with access to real-time web search capabilities. "
@@ -109,7 +110,7 @@ def chat_completions():
         ]
 
         completion = client.chat.completions.create(
-            model=AZURE_OPENAI_DEPLOYMENT_NAME,
+            model=model_name,
             messages=augmented_messages
         )
         
@@ -118,7 +119,7 @@ def chat_completions():
             "id": completion.id,
             "object": "chat.completion",
             "created": completion.created,
-            "model": AZURE_OPENAI_DEPLOYMENT_NAME,
+            "model": model_name,
             "choices": [
                 {
                     "index": 0,
