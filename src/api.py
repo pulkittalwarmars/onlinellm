@@ -60,11 +60,9 @@ def web_search(query, num_results=5):
         logger.error(f"Error in web search: {str(e)}")
         return []
 
-
 @app.route('/openai/deployments/<model_name>/chat/completions', methods=['POST'])
 def chat_completions(model_name):
     app.logger.info(f"Received request for model: {model_name}")
-    app.logger.info(f"Request data: {request.json}")
     app.logger.debug(f"Request data: {request.json}")
     try:
         data = request.json
@@ -75,34 +73,30 @@ def chat_completions(model_name):
             logger.warning("No user message found in the request")
             return jsonify({"error": "No user message found"}), 400
 
-        use_web_search = model_name.endswith('_onlinellm')
-        actual_model_name = model_name.rsplit('_onlinellm', 1)[0] if use_web_search else model_name
+        app.logger.info(f"Performing web search for query: {user_message}")
+        search_results = web_search(user_message)
+        app.logger.info(f"Web search results: {search_results}")
 
-        if use_web_search:
-            app.logger.info(f"Performing web search for query: {user_message}")
-            search_results = web_search(user_message)
-            app.logger.info(f"Web search results: {search_results}")
-            relevant_info = "\n".join(search_results)
+        relevant_info = "\n".join(search_results)
 
-            system_message = (
-                "You are an advanced AI assistant with access to real-time web search capabilities. "
-                "Your role is to provide accurate, up-to-date, and comprehensive answers to user queries "
-                "based on the search results provided and your extensive knowledge base. "
-                "Always prioritize information from the search results, but feel free to supplement "
-                "with your general knowledge when appropriate. Provide well-structured, informative responses "
-                "that directly address the user's question. If the search results don't provide enough information "
-                "or seem irrelevant, state this clearly and offer the best answer you can based on your knowledge."
-            )
+        system_message = (
+            "You are an advanced AI assistant with access to real-time web search capabilities. "
+            "Your role is to provide accurate, up-to-date, and comprehensive answers to user queries "
+            "based on the search results provided and your extensive knowledge base. "
+            "Always prioritize information from the search results, but feel free to supplement "
+            "with your general knowledge when appropriate. Provide well-structured, informative responses "
+            "that directly address the user's question. If the search results don't provide enough information "
+            "or seem irrelevant, state this clearly and offer the best answer you can based on your knowledge."
+        )
 
-            augmented_messages = [
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": f"Query: {user_message}\nRelevant information from web search:\n{relevant_info}\n\nPlease answer the query based on this up-to-date information."}
-            ]
-        else:
-            augmented_messages = messages
+        augmented_messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": f"Query: {user_message}\nRelevant information from web search:\n{relevant_info}\n\nPlease answer the query based on this up-to-date information."}
+        ]
+
 
         completion = client.chat.completions.create(
-            model=actual_model_name,
+            model=model_name,
             messages=augmented_messages
         )
         
