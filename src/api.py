@@ -41,27 +41,7 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize AzureOpenAI client: {str(e)}")
     raise
-
-class RateLimiter:
-    def __init__(self, max_calls, period):
-        self.max_calls = max_calls
-        self.period = period
-        self.calls = []
-        self.lock = Lock()
-
-    def __call__(self, f):
-        def wrapped(*args, **kwargs):
-            with self.lock:
-                now = time.time()
-                self.calls = [c for c in self.calls if c > now - self.period]
-                if len(self.calls) >= self.max_calls:
-                    raise Exception("Rate limit exceeded")
-                self.calls.append(now)
-            return f(*args, **kwargs)
-        return wrapped
-
-@lru_cache(maxsize=1000)
-def cached_serper_search(query, num_results=5):
+def serper_search(query, num_results=5):
     url = "https://google.serper.dev/search"
     payload = json.dumps({
         "q": query,
@@ -88,13 +68,9 @@ def cached_serper_search(query, num_results=5):
         logger.error(f"Error in Serper search: {str(e)}")
         return []
 
-@RateLimiter(max_calls=5, period=1)  # 5 calls per second
-def rate_limited_serper_search(query, num_results=5):
-    return cached_serper_search(query, num_results)
-
 def web_search(query, num_results=5):
     try:
-        results = rate_limited_serper_search(query, num_results)
+        results = serper_search(query, num_results)
         if not results:
             logger.warning("Serper search returned no results")
             results = ["No search results available. Please rely on the AI's general knowledge."]
