@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 import logging
 from flask_cors import CORS
+from functools import lru_cache
+import time
+from threading import Lock
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +36,24 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize AzureOpenAI client: {str(e)}")
     raise
+
+class RateLimiter:
+    def __init__(self, max_calls, period):
+        self.max_calls = max_calls
+        self.period = period
+        self.calls = []
+        self.lock = Lock()
+
+    def __call__(self, f):
+        def wrapped(*args, **kwargs):
+            with self.lock:
+                now = time.time()
+                self.calls = [c for c in self.calls if c > now - self.period]
+                if len(self.calls) >= self.max_calls:
+                    raise Exception("Rate limit exceeded")
+                self.calls.append(now)
+            return f(*args, **kwargs)
+        return wrapped
 
 def duckduckgo_search(query, num_results=5):
     url = "https://html.duckduckgo.com/html/"
@@ -64,6 +85,14 @@ def duckduckgo_search(query, num_results=5):
         logger.error(f"Unexpected error in web search: {str(e)}")
     return []
 
+@lru_cache(maxsize=1000)
+def cached_duckduckgo_search(query, num_results=5):
+    return duckduckgo_search(query, num_results)
+
+@RateLimiter(max_calls=1, period=2)
+def rate_limited_duckduckgo_search(query, num_results=5):
+    return cached_duckduckgo_search(query, num_results)
+
 def bing_search(query, num_results=5):
     url = "https://www.bing.com/search"
     params = {'q': query, 'count': num_results}
@@ -83,11 +112,23 @@ def bing_search(query, num_results=5):
         logger.error(f"Error in Bing search: {str(e)}")
         return []
 
+@lru_cache(maxsize=1000)
+def cached_bing_search(query, num_results=5):
+    return bing_search(query, num_results)
+
+@RateLimiter(max_calls=1, period=2)
+def rate_limited_bing_search(query, num_results=5):
+    return cached_bing_search(query, num_results)
+
 def web_search(query, num_results=5):
-    results = duckduckgo_search(query, num_results)
-    if not results:
-        logger.warning("DuckDuckGo search failed, falling back to Bing")
-        results = bing_search(query, num_results)
+    try:
+        results = rate_limited_duckduckgo_search(query, num_results)
+        if not results:
+            logger.warning("DuckDuckGo search failed, falling back to Bing")
+            results = rate_limited_bing_search(query, num_results)
+    except Exception as e:
+        logger.error(f"Error in web search: {str(e)}")
+        results = []
     return results
 
 @app.route('/openai/deployments/<model_name>/chat/completions', methods=['POST'])
@@ -158,7 +199,6 @@ def chat_completions(model_name):
     except Exception as e:
         app.logger.error(f"Error in chat_completions: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/test', methods=['GET'])
 def test():
