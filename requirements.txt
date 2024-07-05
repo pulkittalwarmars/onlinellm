@@ -1,8 +1,5 @@
 langchain_openai 
-bs4
 langchain
-load_dotenv
-json
 flask_limiter
 Werkzeug==3.0.1
 gunicorn==22.0.0

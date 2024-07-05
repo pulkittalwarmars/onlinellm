@@ -12,8 +12,7 @@ setup(
         'requests',
         'beautifulsoup4',
         'openai',
-        'python-dotenv',
-        'json'
+        'python-dotenv'
     ],
     entry_points={
         'console_scripts': [
