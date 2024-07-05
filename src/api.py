@@ -34,12 +34,13 @@ except Exception as e:
     logger.error(f"Failed to initialize AzureOpenAI client: {str(e)}")
     raise
 
-def web_search(query, num_results=5):
+def duckduckgo_search(query, num_results=5):
     url = "https://html.duckduckgo.com/html/"
     params = {'q': query, 'kl': 'us-en'}
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     
     try:
+        logger.info(f"Attempting web search for query: {query}")
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         
@@ -55,10 +56,39 @@ def web_search(query, num_results=5):
                 snippet = snippet_elem.get_text(strip=True)
                 results.append(f"{title}: {snippet}")
         
+        logger.info(f"Web search completed. Found {len(results)} results.")
+        return results
+    except requests.RequestException as e:
+        logger.error(f"Request error in web search: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error in web search: {str(e)}")
+    return []
+
+def bing_search(query, num_results=5):
+    url = "https://www.bing.com/search"
+    params = {'q': query, 'count': num_results}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+    
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = []
+        for result in soup.select('.b_algo')[:num_results]:
+            title = result.select_one('h2').text
+            snippet = result.select_one('.b_caption p').text
+            results.append(f"{title}: {snippet}")
         return results
     except Exception as e:
-        logger.error(f"Error in web search: {str(e)}")
+        logger.error(f"Error in Bing search: {str(e)}")
         return []
+
+def web_search(query, num_results=5):
+    results = duckduckgo_search(query, num_results)
+    if not results:
+        logger.warning("DuckDuckGo search failed, falling back to Bing")
+        results = bing_search(query, num_results)
+    return results
 
 @app.route('/openai/deployments/<model_name>/chat/completions', methods=['POST'])
 def chat_completions(model_name):
