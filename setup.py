@@ -13,6 +13,7 @@ setup(
         'beautifulsoup4',
         'openai',
         'python-dotenv',
+        'azure-cognitiveservices-search-websearch'
     ],
     entry_points={
         'console_scripts': [

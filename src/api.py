@@ -8,6 +8,8 @@ from flask_cors import CORS
 from functools import lru_cache
 import time
 from threading import Lock
+import json
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -23,9 +25,12 @@ AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION')
 AZURE_OPENAI_DEPLOYMENT_NAME = "pt_rekoncile"
 
-if not all([AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME]):
-    logger.error("Missing required Azure OpenAI environment variables")
-    raise ValueError("Missing required Azure OpenAI environment variables")
+# Serper API settings
+SERPER_API_KEY = os.getenv('SERPER_API_KEY')
+
+if not all([AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME, SERPER_API_KEY]):
+    logger.error("Missing required environment variables")
+    raise ValueError("Missing required environment variables")
 
 try:
     client = AzureOpenAI(
@@ -55,87 +60,53 @@ class RateLimiter:
             return f(*args, **kwargs)
         return wrapped
 
-def duckduckgo_search(query, num_results=5):
-    url = "https://html.duckduckgo.com/html/"
-    params = {'q': query, 'kl': 'us-en'}
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-    
+@lru_cache(maxsize=1000)
+def cached_serper_search(query, num_results=5):
+    url = "https://google.serper.dev/search"
+    payload = json.dumps({
+        "q": query,
+        "num": num_results
+    })
+    headers = {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json'
+    }
     try:
-        logger.info(f"Attempting web search for query: {query}")
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.request("POST", url, headers=headers, data=payload)
         response.raise_for_status()
+        search_results = response.json()
         
-        soup = BeautifulSoup(response.text, 'html.parser')
         results = []
-        
-        for result in soup.select('.result__body')[:num_results]:
-            title_elem = result.select_one('.result__title')
-            snippet_elem = result.select_one('.result__snippet')
-            
-            if title_elem and snippet_elem:
-                title = title_elem.get_text(strip=True)
-                snippet = snippet_elem.get_text(strip=True)
+        if 'organic' in search_results:
+            for result in search_results['organic'][:num_results]:
+                title = result.get('title', '')
+                snippet = result.get('snippet', '')
                 results.append(f"{title}: {snippet}")
         
-        logger.info(f"Web search completed. Found {len(results)} results.")
-        return results
-    except requests.RequestException as e:
-        logger.error(f"Request error in web search: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error in web search: {str(e)}")
-    return []
-
-@lru_cache(maxsize=1000)
-def cached_duckduckgo_search(query, num_results=5):
-    return duckduckgo_search(query, num_results)
-
-@RateLimiter(max_calls=1, period=2)
-def rate_limited_duckduckgo_search(query, num_results=5):
-    return cached_duckduckgo_search(query, num_results)
-
-def bing_search(query, num_results=5):
-    url = "https://www.bing.com/search"
-    params = {'q': query, 'count': num_results}
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-    
-    try:
-        response = requests.get(url, params=params, headers=headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        results = []
-        for result in soup.select('.b_algo')[:num_results]:
-            title = result.select_one('h2').text
-            snippet = result.select_one('.b_caption p').text
-            results.append(f"{title}: {snippet}")
         return results
     except Exception as e:
-        logger.error(f"Error in Bing search: {str(e)}")
+        logger.error(f"Error in Serper search: {str(e)}")
         return []
 
-@lru_cache(maxsize=1000)
-def cached_bing_search(query, num_results=5):
-    return bing_search(query, num_results)
-
-@RateLimiter(max_calls=1, period=2)
-def rate_limited_bing_search(query, num_results=5):
-    return cached_bing_search(query, num_results)
+@RateLimiter(max_calls=5, period=1)  # 5 calls per second
+def rate_limited_serper_search(query, num_results=5):
+    return cached_serper_search(query, num_results)
 
 def web_search(query, num_results=5):
     try:
-        results = rate_limited_duckduckgo_search(query, num_results)
+        results = rate_limited_serper_search(query, num_results)
         if not results:
-            logger.warning("DuckDuckGo search failed, falling back to Bing")
-            results = rate_limited_bing_search(query, num_results)
+            logger.warning("Serper search returned no results")
+            results = ["No search results available. Please rely on the AI's general knowledge."]
     except Exception as e:
         logger.error(f"Error in web search: {str(e)}")
-        results = []
+        results = ["Search functionality is currently unavailable. Please rely on the AI's general knowledge."]
     return results
 
 @app.route('/openai/deployments/<model_name>/chat/completions', methods=['POST'])
 def chat_completions(model_name):
     app.logger.info(f"Received request for model: {model_name}")
     app.logger.info(f"Request data: {request.json}")
-    app.logger.debug(f"Request data: {request.json}")
     try:
         data = request.json
         messages = data.get('messages', [])

@@ -11,3 +11,4 @@ openai==1.13.3
 python-dotenv==1.0.1
 Flask-CORS==4.0.1
 flask==3.0.3
+json
