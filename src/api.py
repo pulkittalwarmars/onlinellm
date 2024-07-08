@@ -7,6 +7,7 @@ import logging
 from flask_cors import CORS
 from functools import lru_cache
 import time
+import datetime
 from threading import Lock
 import json
 
@@ -41,6 +42,7 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize AzureOpenAI client: {str(e)}")
     raise
+
 def serper_search(query, num_results=5):
     url = "https://google.serper.dev/search"
     payload = json.dumps({
@@ -52,7 +54,8 @@ def serper_search(query, num_results=5):
         'Content-Type': 'application/json'
     }
     try:
-        response = requests.request("POST", url, headers=headers, data=payload)
+        logger.info(f"Sending search request to Serper API for query: {query}")
+        response = requests.post(url, headers=headers, data=payload, timeout=10)
         response.raise_for_status()
         search_results = response.json()
         
@@ -61,12 +64,26 @@ def serper_search(query, num_results=5):
             for result in search_results['organic'][:num_results]:
                 title = result.get('title', '')
                 snippet = result.get('snippet', '')
-                results.append(f"{title}: {snippet}")
+                link = result.get('link', '')
+                results.append(f"{title}\nSnippet: {snippet}\nURL: {link}\n")
+        
+        logger.info(f"Serper API returned {len(results)} results for query: {query}")
+        
+        if not results:
+            logger.warning(f"No results found for query: {query}")
+            results.append("No relevant search results found. The AI will rely on its existing knowledge to answer the query.")
         
         return results
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Serper API request failed: {str(e)}")
+        return ["Search functionality is currently unavailable. The AI will rely on its existing knowledge to answer the query."]
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse Serper API response: {str(e)}")
+        return ["Error processing search results. The AI will rely on its existing knowledge to answer the query."]
     except Exception as e:
-        logger.error(f"Error in Serper search: {str(e)}")
-        return []
+        logger.error(f"Unexpected error in Serper search: {str(e)}")
+        return ["An unexpected error occurred during the search. The AI will rely on its existing knowledge to answer the query."]
 
 def web_search(query, num_results=5):
     try:
